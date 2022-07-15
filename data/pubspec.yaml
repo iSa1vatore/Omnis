@@ -1,0 +1,70 @@
+publish_to: none
+name: data
+description: Data layer for Omnis
+version: 0.0.1
+
+environment:
+  sdk: ">=2.17.5 <3.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  domain:
+    path: ../domain
+
+  common:
+    path: ../common
+
+  # Network
+  dio: ^4.0.6
+
+  # Utils
+  freezed_annotation: ^2.0.3
+  worker_manager: ^4.3.5
+
+  # Json Serialization
+  json_annotation: ^4.5.0
+
+  # DI
+  injectable: ^1.5.3
+  get_it: ^7.2.0
+
+  # Local Storage
+  floor: ^1.3.0
+  flutter_secure_storage: ^5.0.2
+  shared_preferences: ^2.0.15
+
+  # RX
+  rxdart: ^0.27.4
+
+dependency_overrides:
+  analyzer: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+  # Json Serialization
+  json_serializable: ^6.2.0
+
+  # Utils
+  freezed: ^2.0.3+1
+
+  # DI
+  injectable_generator: ^1.5.3
+
+  # Codegen
+  build_runner: ^2.1.11
+
+  # Local Storage
+  floor_generator: ^1.3.0
+
+flutter:
+
+module:
+  androidX: true
+  androidPackage: space.sproject.omnis.data
+  iosBundleIdentifier: space.sproject.omnis.data

@@ -1,0 +1,1 @@
+enum MessageActivityType { typing, audiomessage }

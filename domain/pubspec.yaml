@@ -1,0 +1,37 @@
+publish_to: none
+name: domain
+description: Domain layer for Omnis
+version: 0.0.1
+
+environment:
+  sdk: ">=2.17.5 <3.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  common:
+    path: ../common
+
+  # Utils
+  freezed_annotation: ^2.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+  # Utils
+  freezed: ^2.0.3+1
+
+  # Codegen
+  build_runner: ^2.1.11
+
+flutter:
+
+module:
+  androidX: true
+  androidPackage: space.sproject.omnis.domain
+  iosBundleIdentifier: space.sproject.omnis.domain
