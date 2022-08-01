@@ -2,10 +2,12 @@ import 'package:domain/model/message.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:omnis/extensions/build_context.dart';
+import 'package:omnis/pages/conversation/widgets/message_attachment/message_attachments_container.dart';
 import 'package:omnis/utils/emoji_utils.dart';
 import 'package:omnis/widgets/slidable_widget.dart';
 
 import '../pages/conversation/widgets/message_context_menu.dart';
+import 'message_send_status.dart';
 
 class MessagesBubble extends StatelessWidget {
   final Message message;
@@ -24,20 +26,14 @@ class MessagesBubble extends StatelessWidget {
     var rowContent = <Widget>[];
 
     var messageSendTime = Padding(
-      padding: EdgeInsets.only(bottom: isOut ? 2 : 9, left: 8),
+      padding: EdgeInsets.only(bottom: isOut ? 1.5 : 9, left: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (isOut)
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
-              child: Icon(
-                message.sendState == 0
-                    ? Icons.check
-                    : Icons.access_time_rounded,
-                size: 14,
-                color: context.theme.colorScheme.primary,
-              ),
+              child: MessageSendState(message.sendState, isRead: false),
             ),
           Text(
             DateFormat('hh:mm a').format(
@@ -49,10 +45,12 @@ class MessagesBubble extends StatelessWidget {
       ),
     );
 
-    Widget textWidget;
+    Widget? textWidget;
     Color? containerColor;
 
-    var isEmojiMessage = EmojiUtils.hasOnlyEmojis(text) && text.length <= 6;
+    var isEmojiMessage = text == null
+        ? false
+        : EmojiUtils.hasOnlyEmojis(text) && text.length <= 6;
 
     if (isEmojiMessage) {
       textWidget = Text(
@@ -69,18 +67,26 @@ class MessagesBubble extends StatelessWidget {
           ? context.extraColors.messageBackgroundColor
           : context.extraColors.outMessageBackgroundColor;
 
-      textWidget = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            color: isOut
-                ? context.extraColors.messageTextColor
-                : context.extraColors.outMessageTextColor,
+      if (text != null) {
+        textWidget = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              color: isOut
+                  ? context.extraColors.messageTextColor
+                  : context.extraColors.outMessageTextColor,
+            ),
           ),
-        ),
-      );
+        );
+      }
+    }
+
+    Widget? attachmentsWidget;
+
+    if (message.attachments != null && message.attachments!.isNotEmpty) {
+      attachmentsWidget = MessageAttachmentsContainer(message);
     }
 
     rowContent.add(Flexible(
@@ -88,9 +94,14 @@ class MessagesBubble extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: containerColor,
-            borderRadius: const BorderRadius.all(Radius.circular(20)),
+            borderRadius: const BorderRadius.all(Radius.circular(18)),
           ),
-          child: textWidget,
+          child: Column(
+            children: [
+              if (textWidget != null) textWidget,
+              if (attachmentsWidget != null) attachmentsWidget,
+            ],
+          ),
         ),
       ),
     ));

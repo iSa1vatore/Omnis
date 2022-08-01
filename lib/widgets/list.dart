@@ -47,20 +47,24 @@ class CellList extends StatelessWidget {
 
 class ListItem extends StatelessWidget {
   final IconData icon;
+  final IconData actionIcon;
   final String title;
-  final String desc;
+  final String? desc;
+  final GestureTapCallback? onTap;
 
   const ListItem({
     Key? key,
     required this.icon,
+    this.actionIcon = CupertinoIcons.right_chevron,
     required this.title,
-    required this.desc,
+    this.onTap,
+    this.desc,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TouchEffect(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -73,18 +77,25 @@ class ListItem extends StatelessWidget {
               color: context.theme.colorScheme.primary,
             ),
             const SizedBox(width: 16),
-            Text(
-              title,
-              style: context.theme.textTheme.subtitle1,
+            Expanded(
+              child: Text(
+                title,
+                style: context.theme.textTheme.subtitle1,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             const SizedBox(width: 8),
-            Text(
-              desc,
-              style: context.textTheme.caption,
-            ),
-            const Spacer(),
+            if (desc != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  desc!,
+                  style: context.textTheme.caption,
+                ),
+              ),
             Icon(
-              CupertinoIcons.right_chevron,
+              actionIcon,
               size: 18,
               color: context.extraColors.secondaryIconColor,
             )

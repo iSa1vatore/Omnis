@@ -9,6 +9,8 @@ class ExtraColors extends ThemeExtension<ExtraColors> {
     required this.messageBoxBorderColor,
     required this.messageTextColor,
     required this.dangerColor,
+    required this.contextMenuColor,
+    required this.inverseTextColor,
   });
 
   final Color? secondaryIconColor;
@@ -18,6 +20,8 @@ class ExtraColors extends ThemeExtension<ExtraColors> {
   final Color? outMessageTextColor;
   final Color? messageTextColor;
   final Color? dangerColor;
+  final Color? contextMenuColor;
+  final Color? inverseTextColor;
 
   @override
   ThemeExtension<ExtraColors> copyWith({
@@ -28,6 +32,8 @@ class ExtraColors extends ThemeExtension<ExtraColors> {
     Color? outMessageTextColor,
     Color? messageTextColor,
     Color? dangerColor,
+    Color? contextMenuColor,
+    Color? inverseTextColor,
   }) {
     return ExtraColors(
       secondaryIconColor: secondaryIconColor ?? this.secondaryIconColor,
@@ -40,6 +46,8 @@ class ExtraColors extends ThemeExtension<ExtraColors> {
       outMessageTextColor: outMessageTextColor ?? this.outMessageTextColor,
       messageTextColor: messageTextColor ?? this.messageTextColor,
       dangerColor: dangerColor ?? this.dangerColor,
+      contextMenuColor: contextMenuColor ?? this.contextMenuColor,
+      inverseTextColor: inverseTextColor ?? this.inverseTextColor,
     );
   }
 
@@ -65,6 +73,8 @@ class ExtraColors extends ThemeExtension<ExtraColors> {
           Color.lerp(outMessageTextColor, other.outMessageTextColor, t),
       messageTextColor: Color.lerp(messageTextColor, other.messageTextColor, t),
       dangerColor: Color.lerp(dangerColor, other.dangerColor, t),
+      contextMenuColor: Color.lerp(contextMenuColor, other.contextMenuColor, t),
+      inverseTextColor: Color.lerp(inverseTextColor, other.inverseTextColor, t),
     );
   }
 }

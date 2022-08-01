@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:common/utils/network_utils.dart';
+import 'package:dartz/dartz.dart';
 import 'package:data/sources/remote/api_service.dart';
+import 'package:dio/dio.dart';
+import 'package:domain/exceptions/api_failure.dart';
+import 'package:domain/exceptions/users_failure.dart';
+import 'package:domain/model/connection.dart';
+import 'package:domain/model/public_connection.dart';
 import 'package:domain/model/user.dart';
-import 'package:domain/model/user_connection.dart';
-import 'package:domain/model/user_nearby.dart';
 import 'package:domain/repository/users_repository.dart';
-import 'package:domain/util/resource.dart';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:worker_manager/worker_manager.dart';
@@ -26,41 +29,80 @@ class UsersRepositoryImpl extends UsersRepository {
     _dao = db.userDao;
   }
 
-  final _usersNearbyStream = BehaviorSubject<List<UserNearby>>.seeded([]);
+  final _usersNearbyStream = BehaviorSubject<List<User>>.seeded([]);
 
   @override
-  Stream<List<UserNearby>> observeUsersNearby() =>
+  Stream<List<User>> observeUsersNearby() =>
       _usersNearbyStream.asBroadcastStream();
 
   @override
-  Future<Resource<User>> me() async {
-    var user = await _dao.findUserById(1);
+  Future<Either<UsersFailure, User>> me() async {
+    try {
+      var user = await _dao.findUserById(1);
 
-    if (user != null) {
-      return Resource.success(user.toUser());
+      if (user != null) return Right(user.toUser());
+
+      return const Left(UsersFailure.doesNotExist());
+    } catch (_) {
+      return const Left(UsersFailure.dbError());
     }
-
-    return Resource.error("lol");
   }
 
   @override
-  Future<Resource<User>> create(User user) async {
-    var oldUser = await _dao.findUserByGlobalId(user.globalId);
+  Future<Either<UsersFailure, User>> create(User user) async {
+    try {
+      var newUserId = await _dao.insertUser(user.toUserEntity());
 
-    if (oldUser != null) {
-      print("Не создали юзера");
-      return Resource.success(oldUser.toUser());
+      var newUser = await _dao.findUserById(newUserId);
+
+      if (newUser != null) return right(newUser.toUser());
+
+      return left(const UsersFailure.createError());
+    } catch (_) {
+      return left(const UsersFailure.dbError());
     }
+  }
 
-    var newUserId = await _dao.insertUser(user.toUserEntity());
+  @override
+  Future<User?> findByID(int id) async {
+    var newUser = await _dao.findUserById(id);
 
-    var newUser = await _dao.findUserById(newUserId);
+    return newUser?.toUser();
+  }
 
-    if (newUser != null) {
-      return Resource.success(newUser.toUser());
+  @override
+  Future<Either<UsersFailure, User>> findByGlobalId(String globalId) async {
+    try {
+      var user = await _dao.findUserByGlobalId(globalId);
+
+      if (user != null) return right(user.toUser());
+
+      return left(const UsersFailure.doesNotExist());
+    } catch (_) {
+      return left(const UsersFailure.dbError());
     }
+  }
 
-    return Resource.error("create new user error");
+  @override
+  Future<List<User>> findAll() async {
+    var users = await _dao.findAll();
+
+    return users.map((e) => e.toUser()).toList();
+  }
+
+  @override
+  Future<Either<UsersFailure, User>> fetchFromRemote(
+    Connection connection,
+  ) async {
+    try {
+      var user = await apiService.fetchUser(connection);
+
+      return right(user.toUser());
+    } on DioError catch (_) {
+      return left(const UsersFailure.serverError());
+    } on ApiFailure catch (_) {
+      return left(const UsersFailure.apiError());
+    }
   }
 
   @override
@@ -75,45 +117,37 @@ class UsersRepositoryImpl extends UsersRepository {
     )
         .thenNext((value) async {
       var networks = value.where(
-            (network) => network.ip != ownerIp,
+        (network) => network.ip != ownerIp,
       );
 
+      var addresses = networks.map((e) => e.ip).toList();
+      var usersNearby = _usersNearbyStream.value
+          .where(
+            (user) => addresses.contains(user.address!.ip),
+          )
+          .toList();
+
+      var newUsers = [];
       for (var network in networks) {
-        var usersNearby = [..._usersNearbyStream.value];
+        if (usersNearby.indexWhere((u) => u.address?.ip == network.ip) == -1) {
+          try {
+            var userInfo = await apiService.fetchUser(PublicConnection(
+              address: network,
+            ));
 
-        if (usersNearby.indexWhere((u) => u.address.ip == network.ip) == -1) {
-          var userInfo = await apiService.fetchUser(UserConnection(
-            address: network,
-            token: "",
-            encryptionPublicKey: "",
-          ));
+            var userNearby = userInfo.toUser(address: network);
 
-          var userNearby = userInfo.toUserNearby(network);
-
-          _usersNearbyStream.add([
-            ...[userNearby],
-            ...usersNearby
-          ]);
+            newUsers.add(userNearby);
+          } catch (_) {}
         }
       }
+
+      if (newUsers.isNotEmpty) {
+        _usersNearbyStream.add([
+          ...newUsers,
+          ...usersNearby,
+        ]);
+      }
     });
-  }
-
-  @override
-  Future<Resource<User>> findByID(int id) async {
-    var newUser = await _dao.findUserById(id);
-
-    if (newUser != null) {
-      return Resource.success(newUser.toUser());
-    }
-
-    return Resource.error("create new user error");
-  }
-
-  @override
-  Future<Resource<List<User>>> findAll() async {
-    var users = await _dao.findAll();
-
-    return Resource.success(users.map((e) => e.toUser()).toList());
   }
 }

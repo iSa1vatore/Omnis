@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
 
+import '../../../../bloc/settings_bloc.dart';
 import '../../../../widgets/adaptive_app_bar.dart';
 import '../../../../widgets/adaptive_switch.dart';
 import '../../../../widgets/divider.dart';
 import '../../../../widgets/extended_scroll_view.dart';
-import '../../settings_bloc.dart';
 import '../../widgets/settings_param_cell.dart';
 import '../../widgets/settings_params_container.dart';
 
@@ -65,6 +65,7 @@ class SettingsConnectionPage extends StatelessWidget {
                         );
                       },
                     ),
+                    caption: context.loc.keepInBackgroundDesc,
                   ),
                 ],
               ),

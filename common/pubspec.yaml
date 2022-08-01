@@ -14,6 +14,9 @@ dependencies:
   domain:
     path: ../domain
 
+  # Utils
+  logger: ^1.1.0
+
   # Network
   network_info_plus: ^2.1.3
 

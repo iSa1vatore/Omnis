@@ -6,9 +6,14 @@ import '../../router/router.dart';
 import '../../widgets/adaptive_sliver_app_bar.dart';
 import '../../widgets/page_link.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     var bodyPadding = context.safePadding().copyWith(top: 0);

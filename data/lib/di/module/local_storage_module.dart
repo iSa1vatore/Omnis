@@ -10,8 +10,9 @@ abstract class CommonModule {
   Future<SharedPreferences> get prefs => SharedPreferences.getInstance();
 
   @preResolve
-  Future<AppDatabase> get db =>
-      $FloorAppDatabase.databaseBuilder('app_database.db').build();
+  Future<AppDatabase> get db {
+    return $FloorAppDatabase.databaseBuilder('app_database.db').build();
+  }
 
   @injectable
   FlutterSecureStorage get flutterSecureStorage => const FlutterSecureStorage(

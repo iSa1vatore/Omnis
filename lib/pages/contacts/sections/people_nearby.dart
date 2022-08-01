@@ -1,15 +1,16 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:omnis/bloc/contacts_bloc.dart';
+import 'package:omnis/bloc/conversation_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
-import 'package:omnis/pages/contacts/contacts_bloc.dart';
-import 'package:omnis/pages/conversation/conversation_bloc.dart';
 import 'package:omnis/router/router.dart';
 import 'package:omnis/widgets/adaptive_button.dart';
 import 'package:omnis/widgets/avatar.dart';
 import 'package:side_effect_bloc/side_effect_bloc.dart';
 
 import '../../../../widgets/adaptive_app_bar.dart';
+import '../../../widgets/alert_dialog/adaptive_alert_dialog_factory.dart';
 import '../../../widgets/cell.dart';
 
 class PeopleNearbyPage extends StatelessWidget {
@@ -22,7 +23,7 @@ class PeopleNearbyPage extends StatelessWidget {
         );
 
     var contactsBloc = context.watch<ContactsBloc>();
-    var conversationBloc = context.watch<ConversationBloc>();
+    var conversationBloc = context.read<ConversationBloc>();
 
     return BlocSideEffectListener<ContactsBloc, ContactsSideEffect>(
       listener: (BuildContext context, ContactsSideEffect sideEffect) {
@@ -31,6 +32,10 @@ class PeopleNearbyPage extends StatelessWidget {
             conversationBloc.add(ConversationEvent.selectConversation(user));
             context.router.push(const ConversationRoute());
           },
+          showError: (error) => AdaptiveAlertDialogFactory.showError(
+            context,
+            failure: error,
+          ),
         );
       },
       child: Scaffold(
@@ -56,13 +61,11 @@ class PeopleNearbyPage extends StatelessWidget {
               );
             } else {
               action = AdaptiveButton(
-                title: userNearby.isClosed
+                title: userNearby.isClosed!
                     ? context.loc.request
                     : context.loc.message,
-                onPressed: () {
-                  print("123");
-                  contactsBloc.add(ContactsEvent.sendMessage(userNearby));
-                },
+                onPressed: () =>
+                    contactsBloc.add(ContactsEvent.sendMessage(userNearby)),
               );
             }
 
@@ -70,7 +73,7 @@ class PeopleNearbyPage extends StatelessWidget {
               avatar: Avatar(
                 height: 55,
                 width: 55,
-                url: userNearby.photo,
+                source: userNearby.photo,
               ),
               title: userNearby.name,
               caption: "Meizu 16th",

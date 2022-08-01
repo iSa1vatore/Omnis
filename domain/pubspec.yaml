@@ -15,7 +15,12 @@ dependencies:
     path: ../common
 
   # Utils
-  freezed_annotation: ^2.0.3
+  freezed_annotation: ^2.1.0
+  dartz: ^0.10.1
+
+  # DI
+  injectable: ^1.5.3
+  get_it: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -24,7 +29,10 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
   # Utils
-  freezed: ^2.0.3+1
+  freezed: ^2.1.0+1
+
+  # DI
+  injectable_generator: ^1.5.3
 
   # Codegen
   build_runner: ^2.1.11

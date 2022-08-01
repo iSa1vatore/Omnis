@@ -1,8 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
+import 'package:omnis/widgets/blur_effect.dart';
+
+import '../bloc/settings_bloc.dart';
 
 class AdaptiveAppBar extends StatelessWidget with PreferredSizeWidget {
   final String? title;
@@ -26,28 +28,35 @@ class AdaptiveAppBar extends StatelessWidget with PreferredSizeWidget {
       case TargetPlatform.iOS:
         return SizedBox(
           height: height,
-          child: CupertinoNavigationBar(
-            previousPageTitle: previousPageTitle,
-            border: Border(
-              bottom: BorderSide(
-                color: context.theme.dividerColor,
-                width: 1,
-              ),
-            ),
-            backgroundColor: context.theme.appBarTheme.backgroundColor,
-            middle: child ??
-                Text(
-                  title!,
-                  style: TextStyle(
-                    color: context.textTheme.titleLarge!.color,
+          child: BlocBuilder<SettingsBloc, SettingsState>(
+              buildWhen: (prevState, state) =>
+                  prevState.interfaceBlurEffect != state.interfaceBlurEffect,
+              builder: (context, state) {
+                return CupertinoNavigationBar(
+                  previousPageTitle: previousPageTitle,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: context.theme.dividerColor,
+                      width: 1,
+                    ),
                   ),
-                ),
-            trailing: trailing,
-          ),
+                  backgroundColor: context.theme.appBarTheme.backgroundColor!
+                      .withOpacity(state.interfaceBlurEffect ? 0.65 : 1),
+                  middle: child ??
+                      Text(
+                        title!,
+                        style: TextStyle(
+                          color: context.textTheme.titleLarge!.color,
+                        ),
+                      ),
+                  trailing: trailing,
+                );
+              }),
         );
       case TargetPlatform.android:
       default:
         return AppBar(
+          centerTitle: false,
           title: child ??
               Text(
                 title!,
@@ -55,17 +64,16 @@ class AdaptiveAppBar extends StatelessWidget with PreferredSizeWidget {
                   color: context.textTheme.titleLarge!.color,
                 ),
               ),
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.theme.appBarTheme.backgroundColor,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: context.theme.dividerColor,
-                      width: 1,
-                    ),
+          backgroundColor: Colors.transparent,
+          flexibleSpace: BlurEffect(
+            backgroundColor: context.theme.appBarTheme.backgroundColor,
+            backgroundColorOpacity: .65,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: context.theme.dividerColor,
+                    width: 1,
                   ),
                 ),
               ),

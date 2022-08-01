@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:omnis/pages/auth/auth.dart';
 import 'package:omnis/pages/contacts/contacts.dart';
 import 'package:omnis/pages/contacts/sections/people_nearby.dart';
@@ -17,6 +18,13 @@ import '../pages/settings/sections/profile/profile.dart';
 import '../pages/settings/sections/storage/storage.dart';
 
 part 'router.gr.dart';
+
+Route<T> myCustomRouteBuilder<T>(
+  BuildContext context,
+  Widget child,
+  CustomPage<T> page,
+) =>
+    MaterialWithModalsPageRoute(builder: (_) => child, settings: page);
 
 @Singleton()
 @AdaptiveAutoRouter(

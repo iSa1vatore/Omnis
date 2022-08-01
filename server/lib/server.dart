@@ -1,62 +1,69 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:common/utils/date_time_utils.dart';
 import 'package:common/utils/encryption_utils.dart';
 import 'package:crypton/crypton.dart';
+import 'package:data/mapper/attachment_mapper.dart';
 import 'package:data/mapper/user_mapper.dart';
-import 'package:data/repository/settings_repository_impl.dart';
-import 'package:data/sources/remote/api_service.dart';
+import 'package:data/sources/remote/dto/attachment_dto.dart';
 import 'package:data/sources/remote/dto/user_dto.dart';
-import 'package:domain/enum/message_activity.dart';
-import 'package:domain/model/api_error.dart';
-import 'package:domain/model/message_activity.dart';
-import 'package:domain/model/network_address.dart';
-import 'package:domain/model/user_connection.dart';
+import 'package:domain/model/connection.dart';
+import 'package:domain/model/message_attachment/message_attachment.dart';
+import 'package:domain/model/public_connection.dart';
 import 'package:domain/repository/connections_repository.dart';
 import 'package:domain/repository/conversations_repository.dart';
 import 'package:domain/repository/messages_repository.dart';
-import 'package:domain/repository/private_keys_repository.dart';
 import 'package:domain/repository/users_repository.dart';
 import 'package:injectable/injectable.dart';
-import 'package:server/errors.dart';
+import 'package:server/extensions/shelf_request_extension.dart';
+import 'package:services/files_cache_service/files_cache_service.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
+import 'package:shelf_multipart/form_data.dart';
+import 'package:shelf_multipart/multipart.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-@Singleton()
-class Server {
-  final ApiService apiService;
+import 'enum/server_event_type.dart';
+import 'errors.dart';
+import 'models/api_response.dart';
+import 'models/events/new_message.dart';
+import 'models/events/set_messages_activity.dart';
+import 'models/server_event.dart';
 
-  final UsersRepository usersRepository;
-  final SettingsRepository settingsRepository;
-  final PrivateKeysRepository privateKeysRepository;
+@Singleton()
+class NewServer {
+  NewServer(
+    this.connectionsRepository,
+    this.messagesRepository,
+    this.usersRepository,
+    this.conversationsRepository,
+    this.filesCacheService,
+  );
+
   final ConnectionsRepository connectionsRepository;
   final MessagesRepository messagesRepository;
+  final UsersRepository usersRepository;
   final ConversationsRepository conversationsRepository;
+  final FilesCacheService filesCacheService;
 
   late RSAPrivateKey rsaPrivateKey;
 
-  Server(
-    this.apiService,
-    this.usersRepository,
-    this.settingsRepository,
-    this.privateKeysRepository,
-    this.connectionsRepository,
-    this.messagesRepository,
-    this.conversationsRepository,
-  );
+  final events = StreamController<ServerEvent>.broadcast();
 
-  start({required String address, required int port}) async {
-    var stringKey = await privateKeysRepository.fetchEncryptionPrivateKey();
-
-    rsaPrivateKey = EncryptionUtils.rsaPrivateKeyFromString(stringKey!);
+  Future<void> start({
+    required String address,
+    required int port,
+    required RSAPrivateKey rsaPrivateKey,
+  }) async {
+    this.rsaPrivateKey = rsaPrivateKey;
 
     final router = Router()
       ..get("/api/user/get", _apiUserGet)
-      ..post("/api/user/connect", _apiUserConnect)
-      ..get("/api/contacts/add", _apiUContactsAdd)
       ..post("/api/messages/send", _apiMessagesSend)
       ..post("/api/messages/setActivity", _apiMessagesSetActivity)
+      ..post("/api/user/connect", _apiUserConnect)
       ..post("/api/files/upload", _apiFilesUpload);
 
     final handler = const Pipeline().addHandler(router);
@@ -65,69 +72,159 @@ class Server {
   }
 
   Future<Response> _apiFilesUpload(Request req) async {
-    return Api.response(1);
-  }
+    if (!req.isMultipart) return APIResponse.error(ServerErrors.badRequest);
 
-  Future<Response> _apiUserGet(Request req) async {
-    if (!settingsRepository.privacyShowInPeopleNearby) {
-      return Api.error(ServerErrors.accessDenied);
+    var fileDetails = jsonDecode(req.headers["file_details"]!);
+
+    var fileId = fileDetails["id"];
+    var fileType = fileDetails["type"];
+    var fileName = fileDetails["name"];
+
+    bool fileIsSaved = false;
+    var tmpDir = await filesCacheService.tmpDir;
+
+    await for (final formData in req.multipartFormData) {
+      var chunks = await formData.part.toList();
+
+      if (fileType == "voice" && formData.name == "voice_file") {
+        var voiceFile = File("$tmpDir/$fileId.m4a");
+
+        for (final chunk in chunks) {
+          await voiceFile.writeAsBytes(chunk, mode: FileMode.append);
+        }
+
+        filesCacheService.saveVoiceMessage(
+          file: voiceFile,
+          fileId: fileId,
+          fileName: fileName,
+        );
+
+        fileIsSaved = true;
+        break;
+      }
+
+      if (fileType == "photo" && formData.name == "photo_file") {
+        fileIsSaved = true;
+        break;
+      }
     }
 
-    var profile = await usersRepository.me();
+    if (!fileIsSaved) return APIResponse.error(ServerErrors.badRequest);
 
-    if (profile.data != null) {
-      var user = profile.data!;
-
-      return Api.response(
-        UserDto(
-          globalId: user.globalId,
-          name: user.name,
-          photo: user.photo,
-          isClosed: settingsRepository.privacyClosedMessages,
-          encryptionPublicKey: rsaPrivateKey.publicKey.toString(),
-        ).toJson(),
-      );
-    }
-
-    return Api.error(ServerErrors.accessDenied);
+    return APIResponse.success(1);
   }
 
   Future<Response> _apiUserConnect(Request req) async {
-    if (settingsRepository.privacyClosedMessages) {
-      return Api.error(ServerErrors.accessDenied);
-    }
-
     var body = await getBody(req);
+    var token = body["token"];
     var sender = req.sender;
 
-    var address = sender.split(":");
+    var needCreateConnection = true;
 
-    var userInfo = await apiService.fetchUser(UserConnection(
-      address: NetworkAddress(address[0], int.parse(address[1])),
-      token: body["token"],
-      encryptionPublicKey: "",
-    ));
+    var findConnection = await connectionsRepository.findByToken(token);
 
-    var newUser = await usersRepository.create(userInfo.toUser());
+    //Если соединение есть - обновляем данные, если нужно
+    var updateError = await findConnection.fold(
+      (error) => null,
+      (connection) async {
+        needCreateConnection = false;
 
-    if (newUser.data == null) {
-      return Api.error(ServerErrors.connectionError);
-    }
+        if (connection.address != sender.address) {
+          var updateConnection = await connectionsRepository.update(
+            connection.copyWith(address: sender.address),
+          );
 
-    connectionsRepository.createConnection(
-      userId: newUser.data!.id,
-      userConnection: UserConnection(
-        address: NetworkAddress(address[0], int.parse(address[1])),
-        token: body["token"],
-        encryptionPublicKey: userInfo.encryptionPublicKey,
-      ),
+          return updateConnection.fold((l) => l, (r) => null);
+        }
+
+        return null;
+      },
     );
 
-    return Api.response(1);
+    if (updateError != null) {
+      return APIResponse.error(ServerErrors.serverError);
+    }
+
+    if (!needCreateConnection) {
+      return APIResponse.success(1);
+    }
+
+    var remoteUser = await usersRepository
+        .fetchFromRemote(PublicConnection(
+          address: sender.address,
+        ))
+        .then((user) => user.fold((e) => null, (user) => user));
+
+    if (remoteUser == null) {
+      return APIResponse.error(ServerErrors.serverError);
+    }
+
+    var localUserId = await usersRepository
+        .findByGlobalId(
+          remoteUser.globalId,
+        )
+        .then(
+          (localUser) => localUser.fold((error) => null, (user) => user.id),
+        );
+
+    localUserId ??= await usersRepository.create(remoteUser).then(
+          (localUser) => localUser.fold(
+            (error) => null,
+            (user) => user.id,
+          ),
+        );
+
+    if (localUserId == null) {
+      return APIResponse.error(ServerErrors.serverError);
+    }
+
+    var createConnection = await connectionsRepository.create(Connection(
+      userId: localUserId,
+      token: token,
+      address: sender.address,
+      encryptionPublicKey: remoteUser.encryptionPublicKey!,
+    ));
+
+    if (createConnection.isRight()) {
+      return APIResponse.success(1);
+    }
+
+    return APIResponse.error(ServerErrors.serverError);
   }
 
-  Response _apiUContactsAdd(Request req) {
-    return Api.response(1);
+  Future<Response> _apiMessagesSetActivity(Request req) async {
+    var body = await getBody(req);
+
+    var type = body["type"];
+    var userId = body["user_id"];
+
+    events.sink.add(ServerEvent(
+      type: ServerEventType.setMessagesActivity,
+      data: SESetMessagesActivity(
+        type: type,
+        peerId: userId,
+        time: DateTimeUtils.currentTimestamp,
+      ),
+    ));
+
+    return APIResponse.success(1);
+  }
+
+  Future<Response> _apiUserGet(Request req) async {
+    var profile = await usersRepository
+        .me()
+        .then((user) => user.fold((e) => null, (u) => u));
+
+    if (profile != null) {
+      UserDto? user = profile.toUserDto(
+        rsaPrivateKey.publicKey.toString(),
+        isClosed: false,
+      );
+
+      return APIResponse.success(user.toJson());
+    }
+
+    return APIResponse.error(ServerErrors.serverError);
   }
 
   Future<Response> _apiMessagesSend(Request req) async {
@@ -137,54 +234,44 @@ class Server {
     var globalId = body["globalId"];
     var userId = body["user_id"];
 
-    var findUser = await usersRepository.findByID(userId);
+    List<MessageAttachment>? attachments;
 
-    findUser.result(
-      onSuccess: (u) async {
-        var messageId = await messagesRepository.add(
-          globalId: globalId,
-          text: text,
-          peerId: u.id,
-          fromId: u.id,
-        );
+    if (body["attachments"] != null) {
+      List<dynamic> attachmentsList = body["attachments"];
 
-        messageId.result(
-          onSuccess: (lastMessageId) {
-            conversationsRepository.update(
-              id: u.id,
-              lastMessageId: lastMessageId,
-            );
-          },
-          onError: (e) {},
-        );
-      },
-      onError: (e) {},
-    );
-
-    return Api.response(1);
-  }
-
-  Future<Response> _apiMessagesSetActivity(Request req) async {
-    var body = await getBody(req);
-
-    var type = body["type"];
-    var userId = body["user_id"];
-
-    MessageActivityType activityType;
-
-    if (type == "audiomessage") {
-      activityType = MessageActivityType.audiomessage;
-    } else {
-      activityType = MessageActivityType.typing;
+      attachments = attachmentsList
+          .map((e) => MessageAttachmentDto.fromJson(e).toAttachment())
+          .toList();
     }
 
-    messagesRepository.setActivity(MessageActivity(
+    var message = await messagesRepository.add(
+      globalId: globalId,
+      text: text,
       peerId: userId,
-      type: activityType,
-      time: DateTimeUtils.currentTimestamp,
+      fromId: userId,
+      attachments: attachments,
+    );
+
+    events.sink.add(ServerEvent(
+      type: ServerEventType.newMessage,
+      data: SENewMessage(
+        id: message.id,
+        globalId: message.globalId,
+        time: message.time,
+        peerId: message.peerId,
+        fromId: message.peerId,
+        sendState: message.sendState,
+        text: message.text,
+        attachments: attachments,
+      ),
     ));
 
-    return Api.response(1);
+    conversationsRepository.update(
+      id: message.peerId,
+      lastMessageId: message.id,
+    );
+
+    return APIResponse.success(1);
   }
 
   Future<Map<String, dynamic>> getBody(Request req) async {
@@ -199,55 +286,24 @@ class Server {
     } else if (req.encryption == 'aes') {
       var bodyParts = body.split("\n");
 
-      var sender = req.sender.split(":");
-
       var connection = await connectionsRepository.findByAddress(
-        ip: sender.first,
-        port: int.parse(sender.last),
+        ip: req.sender.address.ip,
+        port: req.sender.address.port,
       );
 
-      connection.result(
-        onSuccess: (r) {
-          encodedBody = jsonDecode(EncryptionUtils.aesDecrypt(
-            key: r.token,
-            ivKey: bodyParts.first,
-            message: bodyParts.last,
-          ));
+      if (connection != null) {
+        encodedBody = jsonDecode(EncryptionUtils.aesDecrypt(
+          key: connection.token,
+          ivKey: bodyParts.first,
+          message: bodyParts.last,
+        ));
 
-          encodedBody["user_id"] = r.userId;
-        },
-        onError: (r) {
-          encodedBody = {};
-        },
-      );
+        encodedBody["user_id"] = connection.userId;
+      } else {
+        encodedBody = {};
+      }
     }
 
     return encodedBody;
-  }
-}
-
-extension ShelfRequestExtension on Request {
-  String get sender => headers["sender"]!;
-
-  String get encryption => headers["encryption"]!;
-
-  Future<String> get body => readAsString();
-}
-
-class Api {
-  static response(dynamic data) {
-    return Response.ok(
-      json.encode({"response": data}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  }
-
-  static error(APIError apiError) {
-    return Response.ok(
-      json.encode({
-        "error": {"code": apiError.code, "message": apiError.message},
-      }),
-      headers: {'Content-Type': 'application/json'},
-    );
   }
 }

@@ -52,7 +52,7 @@ class SettingsParamsContainer extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: padding,
-          margin: const EdgeInsets.only(bottom: 32),
+          margin: const EdgeInsets.only(bottom: 24),
           decoration: BoxDecoration(
             color: context.theme.cardColor,
             borderRadius: borderRadius,

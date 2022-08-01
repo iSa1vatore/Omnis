@@ -7,6 +7,7 @@ class IconBtn extends StatelessWidget {
   final Color? iconColor;
   final Color? backgroundColor;
   final double? iconSize;
+  final double? containerSize;
   final GestureTapCallback? onTap;
 
   const IconBtn({
@@ -16,6 +17,7 @@ class IconBtn extends StatelessWidget {
     this.iconSize = 28,
     this.backgroundColor = Colors.transparent,
     this.iconColor,
+    this.containerSize = 35,
   }) : super(key: key);
 
   @override
@@ -24,8 +26,8 @@ class IconBtn extends StatelessWidget {
       borderRadius: 100,
       onTap: onTap,
       child: Container(
-        width: 35,
-        height: 35,
+        width: containerSize,
+        height: containerSize,
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,

@@ -1,3 +1,4 @@
+import 'package:domain/model/message_attachment/message_attachment.dart';
 import 'package:floor/floor.dart';
 
 @Entity(tableName: "Messages")
@@ -8,7 +9,8 @@ class MessageEntity {
   final int time;
   final int peerId;
   final int fromId;
-  final String text;
+  final String? text;
+  final List<MessageAttachment>? attachments;
 
   @ColumnInfo(name: 'send_state')
   final int sendState;
@@ -19,7 +21,8 @@ class MessageEntity {
     required this.time,
     required this.peerId,
     required this.fromId,
-    required this.text,
+    this.text,
     required this.sendState,
+    this.attachments = const [],
   });
 }

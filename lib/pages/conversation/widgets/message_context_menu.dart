@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
+import 'package:omnis/bloc/settings_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
 import 'package:omnis/widgets/blur_effect.dart';
 
@@ -84,7 +86,7 @@ class FocusedMenuDetails extends StatefulWidget {
 
 class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
     with TickerProviderStateMixin {
-  final double menuWidth = 230;
+  final double menuWidth = 230.4;
   final double menuHeight = 218;
 
   final double reactionWidth = 230;
@@ -93,15 +95,23 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
   final double bottomOffset = 60;
 
   late AnimationController _animationController;
+  late AnimationController _animationController2;
   late Animation<double> scaleAnimation;
   late Animation<double> messageAnimation;
   late Animation<double> blurAnimation;
+
+  bool blurred = true;
 
   @override
   void initState() {
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 150),
+    )..forward(from: 0.0);
+
+    _animationController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
     )..forward(from: 0.0);
 
     scaleAnimation = Tween(
@@ -122,11 +132,13 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
 
     blurAnimation = Tween(
       begin: 0.0,
-      end: 10.0,
+      end: 5.0,
     ).animate(CurvedAnimation(
-      parent: _animationController,
+      parent: _animationController2,
       curve: Curves.easeInCubic,
     ));
+
+    blurred = context.read<SettingsBloc>().state.interfaceBlurEffect;
 
     super.initState();
   }
@@ -176,8 +188,6 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
       yOffsetReaction = widget.childOffset.dy + widget.childSize!.height + 16;
     }
 
-    var backColor = const Color(0xFF303030);
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -186,6 +196,7 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
             onTap: () {
               if (_animationController.isAnimating) return;
 
+              _animationController2.reverse();
               _animationController.reverse().whenCompleteOrCancel(
                     () => Navigator.pop(context),
                   );
@@ -193,15 +204,20 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
             child: AnimatedBuilder(
               animation: blurAnimation,
               builder: (BuildContext context, Widget? child) {
-                return BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: blurAnimation.value,
-                    sigmaY: blurAnimation.value,
-                  ),
-                  child: Container(
-                    color:
-                        context.theme.scaffoldBackgroundColor.withOpacity(0.20),
-                  ),
+                if (blurred) {
+                  return BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: blurAnimation.value,
+                      sigmaY: blurAnimation.value,
+                    ),
+                    child: Container(
+                      color: Colors.black.withOpacity(blurAnimation.value / 16),
+                    ),
+                  );
+                }
+
+                return Container(
+                  color: Colors.black.withOpacity(blurAnimation.value / 16),
                 );
               },
             ),
@@ -212,13 +228,12 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
             child: AnimatedBuilder(
               animation: scaleAnimation,
               child: BlurEffect(
+                backgroundColor: context.extraColors.contextMenuColor!,
+                backgroundColorOpacity: .8,
                 childBorderRadius: 50,
-                child: Container(
+                child: SizedBox(
                   width: reactionWidth,
                   height: reactionHeight,
-                  decoration: BoxDecoration(
-                    color: backColor.withOpacity(.4),
-                  ),
                   child: ListView(
                     padding: const EdgeInsets.only(
                       left: 16,
@@ -279,46 +294,53 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
                       ContextItem(
                         title: context.loc.reply,
                         icon: CupertinoIcons.reply,
+                        blurred: blurred,
                       ),
                       SizedBox(
                         height: 8,
                         child: Container(
-                          color: context.theme.appBarTheme.backgroundColor,
+                          color: context.theme.appBarTheme.backgroundColor!
+                              .withOpacity(blurred ? .65 : 1),
                         ),
                       ),
                       ContextItem(
                         title: context.loc.edit,
                         icon: IconlyLight.edit,
+                        blurred: blurred,
                       ),
                       SizedBox(
-                        height: 1,
+                        height: 0.5,
                         child: Container(
-                          color: const Color(0xFF757575).withOpacity(0.6),
+                          color: const Color(0xFF757575),
                         ),
                       ),
                       ContextItem(
                         title: context.loc.pin,
                         icon: CupertinoIcons.pin,
+                        blurred: blurred,
                       ),
                       SizedBox(
-                        height: 1,
+                        height: 0.5,
                         child: Container(
-                          color: const Color(0xFF757575).withOpacity(0.6),
+                          color: const Color(0xFF757575),
                         ),
                       ),
                       ContextItem(
                         title: context.loc.delete,
                         icon: IconlyLight.delete,
+                        blurred: blurred,
                       ),
                       SizedBox(
                         height: 8,
                         child: Container(
-                          color: context.theme.appBarTheme.backgroundColor,
+                          color: context.theme.appBarTheme.backgroundColor!
+                              .withOpacity(blurred ? .65 : 1),
                         ),
                       ),
                       ContextItem(
                         title: context.loc.copy,
                         icon: Icons.copy_rounded,
+                        blurred: blurred,
                       ),
                     ],
                   ),
@@ -356,21 +378,22 @@ class _FocusedMenuDetailsState extends State<FocusedMenuDetails>
 class ContextItem extends StatelessWidget {
   final String title;
   final IconData icon;
+  final bool blurred;
 
   const ContextItem({
     Key? key,
     required this.title,
     required this.icon,
+    required this.blurred,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    var backColor = const Color(0xFF313131).withOpacity(0.7);
-
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: backColor,
+        color:
+            context.extraColors.contextMenuColor!.withOpacity(blurred ? .8 : 1),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: 16,

@@ -1,33 +1,62 @@
+import 'package:dartz/dartz.dart';
 import 'package:domain/model/message_activity.dart';
 
 import '../enum/message_activity.dart';
+import '../exceptions/messages_failure.dart';
 import '../model/connection.dart';
 import '../model/message.dart';
-import '../util/resource.dart';
+import '../model/message_attachment/message_attachment.dart';
 
 abstract class MessagesRepository {
-  Future<Resource<List<Message>>> findMessagesByPeerId(int peerId);
+  Future<Either<MessagesFailure, List<Message>>> findMessagesByPeerId({
+    required int peerId,
+    required int limit,
+    required int offset,
+  });
 
-  Future<Resource<int>> add({
+  Future<Either<MessagesFailure, Message>> findMessageById(int id);
+
+  Future<Message> add({
     required String globalId,
-    required String text,
+    String? text,
     required int peerId,
     required int fromId,
+    List<MessageAttachment>? attachments,
   });
 
-  Future<Resource<int>> send({
-    required Connection connection,
-    required String text,
+  Future<Message> send(
+    Connection connection, {
+    String? text,
+    List<MessageAttachment>? attachments,
   });
 
-  Future<Resource<int>> setActivityFor(
+  Future<Either<MessagesFailure, Unit>> uploadAttachment(
+    Connection connection, {
+    required String fileId,
+    required String filePath,
+    required String fileName,
+    required String fileType,
+  });
+
+  Future<Either<MessagesFailure, Unit>> setActivityFor(
     Connection connection, {
     required MessageActivityType type,
   });
 
-  void setActivity(MessageActivity messageActivity);
+  Future<Either<MessagesFailure, int>> fetchUnreadCount({
+    required int peerId,
+    required int lastReadId,
+  });
 
-  Stream<Message> observeNewMessage();
+  void removeMessageActivityBy({
+    required int fromId,
+  });
+
+  void notifyAboutMessage(Message message);
+
+  void notifyAboutNewActivity(MessageActivity messageActivity);
+
+  Stream<Message> observeMessages();
 
   Stream<List<MessageActivity>> observeMessageActivities();
 }

@@ -1,10 +1,10 @@
+import 'package:dartz/dartz.dart';
 import 'package:data/mapper/connection_mapper.dart';
-import 'package:data/sources/local/db/entity/connection_entity.dart';
+import 'package:dio/dio.dart';
+import 'package:domain/exceptions/api_failure.dart';
+import 'package:domain/exceptions/connection_failure.dart';
 import 'package:domain/model/connection.dart';
-import 'package:domain/model/network_address.dart';
-import 'package:domain/model/user_connection.dart';
 import 'package:domain/repository/connections_repository.dart';
-import 'package:domain/util/resource.dart';
 import 'package:injectable/injectable.dart';
 
 import '../sources/local/db/app_database.dart';
@@ -23,73 +23,93 @@ class ConnectionRepositoryImpl extends ConnectionsRepository {
   }
 
   @override
-  Future<Resource<bool>> connectToUser({
-    required UserConnection userConnection,
-  }) async {
-    var result = await apiService.connectToUser(userConnection);
+  Future<Either<UserConnectionFailure, Unit>> connectToUser(
+    Connection connection,
+  ) async {
+    try {
+      var result = await apiService.connectToUser(connection);
 
-    if (result == 1) {
-      return Resource.success(true);
+      if (result == 1) return const Right(unit);
+
+      return const Left(
+        UserConnectionFailure.remoteUserDidNotCreateConnection(),
+      );
+    } on DioError catch (_) {
+      return const Left(UserConnectionFailure.serverError());
+    } on ApiFailure catch (_) {
+      return const Left(UserConnectionFailure.apiError());
     }
-
-    return Resource.error("connect error");
   }
 
   @override
-  Future<Resource<UserConnection>> createConnection({
-    required UserConnection userConnection,
-    required int userId,
-  }) async {
-    var oldConnection = await _dao.findConnectionByUserId(userId);
+  Future<Either<UserConnectionFailure, Unit>> create(
+    Connection connection,
+  ) async {
+    try {
+      await _dao.insertConnection(
+        connection.toConnectionEntity(),
+      );
 
-    if (oldConnection != null) {
-      print("Не создали соединение");
-      return Resource.success(UserConnection(
-        address: NetworkAddress(oldConnection.address, oldConnection.port),
-        encryptionPublicKey: oldConnection.encryptionPublicKey,
-        token: oldConnection.token,
-      ));
+      return const Right(unit);
+    } catch (_) {
+      return const Left(UserConnectionFailure.createError());
     }
-
-    var newConnectionId = await _dao.insertConnection(ConnectionEntity(
-      userId: userId,
-      address: userConnection.address.ip,
-      port: userConnection.address.port,
-      token: userConnection.token,
-      encryptionPublicKey: userConnection.encryptionPublicKey,
-    ));
-
-    var newConnection = await _dao.findConnectionById(newConnectionId);
-
-    if (newConnection != null) {
-      return Resource.success(userConnection);
-    }
-
-    return Resource.error("create new connection error");
   }
 
   @override
-  Future<Resource<Connection>> findByUserId(int userId) async {
-    var connection = await _dao.findConnectionByUserId(userId);
+  Future<Either<UserConnectionFailure, Connection>> findByUserId(
+    int userId,
+  ) async {
+    try {
+      var connection = await _dao.findConnectionByUserId(userId);
 
-    if (connection != null) {
-      return Resource.success(connection.toConnection());
+      if (connection != null) return Right(connection.toConnection());
+
+      return const Left(UserConnectionFailure.doesNotExist());
+    } catch (_) {
+      return const Left(UserConnectionFailure.dbError());
     }
-
-    return Resource.error("get connection error");
   }
 
   @override
-  Future<Resource<Connection>> findByAddress({
+  Future<Either<UserConnectionFailure, Connection>> findByToken(
+    String token,
+  ) async {
+    try {
+      var connection = await _dao.findConnectionByToken(token);
+
+      if (connection != null) Right(connection.toConnection());
+
+      return const Left(UserConnectionFailure.doesNotExist());
+    } catch (_) {
+      return const Left(UserConnectionFailure.dbError());
+    }
+  }
+
+  @override
+  Future<Connection?> findByAddress({
     required String ip,
     required int port,
   }) async {
     var connection = await _dao.findConnectionByAddress(ip, port);
 
-    if (connection != null) {
-      return Resource.success(connection.toConnection());
-    }
+    return connection?.toConnection();
+  }
 
-    return Resource.error("get connection error");
+  @override
+  Future<Either<UserConnectionFailure, Unit>> update(
+    Connection connection,
+  ) async {
+    try {
+      var update = await _dao.updateConnection(
+        connection.toConnectionEntity(),
+      );
+
+      if (update >= 0) return const Right(unit);
+
+      return const Left(UserConnectionFailure.updateError());
+    } catch (_) {
+      return const Left(UserConnectionFailure.dbError());
+    }
   }
 }

@@ -1,8 +1,9 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:omnis/bloc/settings_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
+import 'package:omnis/widgets/blur_effect.dart';
 
 class AdaptiveSliverAppBar extends StatefulWidget {
   final String title;
@@ -23,19 +24,25 @@ class _AdaptiveSliverAppBarState extends State<AdaptiveSliverAppBar> {
   Widget build(BuildContext context) {
     switch (context.platform.type) {
       case TargetPlatform.iOS:
-        return CupertinoSliverNavigationBar(
-          backgroundColor: context.theme.appBarTheme.backgroundColor,
-          largeTitle: Text(
-            widget.title,
-            style: TextStyle(color: context.textTheme.bodyMedium?.color),
-          ),
-          border: Border(
-            bottom: BorderSide(
-              color: context.theme.dividerColor,
-              width: 1,
-            ),
-          ),
-        );
+        return BlocBuilder<SettingsBloc, SettingsState>(
+            buildWhen: (prevState, state) =>
+                prevState.interfaceBlurEffect != state.interfaceBlurEffect,
+            builder: (context, state) {
+              return CupertinoSliverNavigationBar(
+                backgroundColor: context.theme.appBarTheme.backgroundColor!
+                    .withOpacity(state.interfaceBlurEffect ? 0.65 : 1),
+                largeTitle: Text(
+                  widget.title,
+                  style: TextStyle(color: context.textTheme.bodyMedium?.color),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: context.theme.dividerColor,
+                    width: 1,
+                  ),
+                ),
+              );
+            });
       case TargetPlatform.android:
       default:
         return SliverAppBar(
@@ -49,37 +56,43 @@ class _AdaptiveSliverAppBarState extends State<AdaptiveSliverAppBar> {
 
               return ConstrainedBox(
                 constraints: const BoxConstraints.expand(),
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      decoration: BoxDecoration(
-                        color: isCollapsed
-                            ? context.theme.appBarTheme.backgroundColor
-                            : context.theme.scaffoldBackgroundColor,
-                        border: Border(
-                          bottom: BorderSide(
+                child: BlurEffect(
+                  child: BlocBuilder<SettingsBloc, SettingsState>(
+                      buildWhen: (prevState, state) =>
+                          prevState.interfaceBlurEffect !=
+                          state.interfaceBlurEffect,
+                      builder: (context, state) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          decoration: BoxDecoration(
                             color: isCollapsed
-                                ? context.theme.dividerColor
+                                ? context.theme.appBarTheme.backgroundColor!
+                                    .withOpacity(
+                                        state.interfaceBlurEffect ? .65 : 1)
                                 : context.theme.scaffoldBackgroundColor,
-                            width: 1,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: isCollapsed
+                                    ? context.theme.dividerColor
+                                    : context.theme.scaffoldBackgroundColor,
+                                width: 1,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      child: FlexibleSpaceBar(
-                        title: Text(
-                          widget.title,
-                          style: Theme.of(context).appBarTheme.titleTextStyle,
-                          textScaleFactor: 1.1,
-                        ),
-                        titlePadding: const EdgeInsetsDirectional.only(
-                          start: 16.0,
-                          bottom: 12.0,
-                        ),
-                      ),
-                    ),
-                  ),
+                          child: FlexibleSpaceBar(
+                            title: Text(
+                              widget.title,
+                              style:
+                                  Theme.of(context).appBarTheme.titleTextStyle,
+                              textScaleFactor: 1.1,
+                            ),
+                            titlePadding: const EdgeInsetsDirectional.only(
+                              start: 16.0,
+                              bottom: 12.0,
+                            ),
+                          ),
+                        );
+                      }),
                 ),
               );
             },

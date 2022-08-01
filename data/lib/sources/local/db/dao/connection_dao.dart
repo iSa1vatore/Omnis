@@ -6,9 +6,6 @@ abstract class ConnectionDao {
   @Query("SELECT * FROM Connections WHERE token = :token")
   Future<ConnectionEntity?> findConnectionByToken(String token);
 
-  @Query("SELECT * FROM Connections WHERE id = :id")
-  Future<ConnectionEntity?> findConnectionById(int id);
-
   @Query("SELECT * FROM Connections WHERE userId = :userId")
   Future<ConnectionEntity?> findConnectionByUserId(int userId);
 
@@ -17,4 +14,7 @@ abstract class ConnectionDao {
 
   @Insert(onConflict: OnConflictStrategy.replace)
   Future<int> insertConnection(ConnectionEntity connectionEntity);
+
+  @Update(onConflict: OnConflictStrategy.replace)
+  Future<int> updateConnection(ConnectionEntity connectionEntity);
 }

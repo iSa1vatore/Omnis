@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
+import 'package:omnis/bloc/conversation_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
 import 'package:omnis/pages/conversation_details/widgets/button_block.dart';
 import 'package:omnis/widgets/adaptive_button.dart';
@@ -24,6 +26,9 @@ class ConversationDetailsPage extends StatelessWidget {
           top: context.appBarHeight + 16,
         );
 
+    var conversationBloc = context.read<ConversationBloc>();
+    var user = conversationBloc.state.user!;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       extendBody: true,
@@ -43,17 +48,14 @@ class ConversationDetailsPage extends StatelessWidget {
               padding: bodyPadding,
               child: Column(
                 children: [
-                  const Hero(
-                    tag: "conversationAvatar",
-                    child: Avatar(
-                      width: 90,
-                      height: 90,
-                      url: "emoji://👾/grey",
-                    ),
+                  Avatar(
+                    width: 90,
+                    height: 90,
+                    source: user.photo,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "Salvatore-android",
+                    user.name,
                     style: context.textTheme.titleLarge,
                   ),
                   Text(
@@ -65,6 +67,7 @@ class ConversationDetailsPage extends StatelessWidget {
                     children: [
                       Expanded(
                         child: ButtonBlock(
+                          onTap: () {},
                           icon: CupertinoIcons.person_add_solid,
                           title: context.loc.add,
                         ),
@@ -72,6 +75,7 @@ class ConversationDetailsPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: ButtonBlock(
+                          onTap: () {},
                           icon: Icons.notifications_off_rounded,
                           title: context.loc.mute,
                         ),
@@ -79,9 +83,24 @@ class ConversationDetailsPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: ButtonBlock(
+                          onTap: () {},
                           icon: Icons.block_rounded,
                           title: context.loc.block,
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  CellList(
+                    children: [
+                      ListItem(
+                        title: context.loc.reconnectViaQrCode,
+                        icon: IconlyBold.scan,
+                      ),
+                      ListItem(
+                        title: context.loc.showQrCodeForReconnect,
+                        icon: CupertinoIcons.qrcode,
+                        onTap: () {},
                       ),
                     ],
                   ),
@@ -114,7 +133,7 @@ class ConversationDetailsPage extends StatelessWidget {
                         icon: IconlyBold.voice,
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),

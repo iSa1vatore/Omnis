@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:omnis/extensions/build_context.dart';
+import 'package:omnis/extensions/color.dart';
 import 'package:omnis/theme/styles/slider.dart';
 
 import 'extra_colors.dart';
@@ -19,15 +20,18 @@ class BaseTheme {
   final Color secondaryIconColor;
   final Color messageBoxBorderColor;
   final Color outMessageBackgroundColor;
+  final Color contextMenuColor;
+  final Color inverseTextColor;
 
   TextStyle defaultTextStyle = const TextStyle();
 
   static List<MaterialColor> get accents => [
-        Colors.red,
-        Colors.orange,
-        Colors.teal,
-        Colors.blue,
-        Colors.green,
+        const Color(0xFF4ab841).toMaterialColor(),
+        const Color(0xFF4ab5d3).toMaterialColor(),
+        const Color(0xFF7988a3).toMaterialColor(),
+        const Color(0xFFd04336).toMaterialColor(),
+        const Color(0xFF936cda).toMaterialColor(),
+        const Color(0xFFe27d2b).toMaterialColor(),
       ];
 
   BaseTheme({
@@ -44,6 +48,8 @@ class BaseTheme {
     required this.secondaryIconColor,
     required this.messageBoxBorderColor,
     required this.outMessageBackgroundColor,
+    required this.contextMenuColor,
+    required this.inverseTextColor,
   });
 
   ThemeData build(
@@ -99,6 +105,8 @@ class BaseTheme {
               ? Colors.black
               : Colors.white,
           dangerColor: const Color(0xFFff453a),
+          contextMenuColor: contextMenuColor,
+          inverseTextColor: inverseTextColor,
         ),
       ],
       cardColor: cardColor,

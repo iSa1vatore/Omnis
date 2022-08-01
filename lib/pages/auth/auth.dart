@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:omnis/bloc/settings_bloc.dart';
 import 'package:omnis/extensions/build_context.dart';
-import 'package:omnis/pages/settings/settings_bloc.dart';
 
+import '../../bloc/auth_bloc.dart';
 import '../../theme/base_theme.dart';
 import '../../utils/emoji_utils.dart';
 import '../../widgets/adaptive_button.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/simple_color_selector.dart';
-import 'auth_bloc.dart';
 
 class AuthPage extends HookWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -24,7 +24,7 @@ class AuthPage extends HookWidget {
     final avatar = useState<String>(EmojiUtils.getRandomEmojiAvatar());
 
     var loading = bloc.state.when(
-      authorized: () => false,
+      authorized: (user) => false,
       loading: () => true,
       unauthorized: () => false,
     );
@@ -84,7 +84,7 @@ class AuthPage extends HookWidget {
                         Avatar(
                           width: 85,
                           height: 85,
-                          url: avatar.value,
+                          source: avatar.value,
                         ),
                         Positioned(
                           right: 0,
@@ -118,9 +118,10 @@ class AuthPage extends HookWidget {
                   SimpleColorSelector(
                     colors: BaseTheme.accents,
                     selectedColor: settingsBloc.state.interfaceColorAccent,
-                    onChange: (i) => settingsBloc.add(
-                      SettingsEvent.setThemeAccent(i),
-                    ),
+                    onChange: (i) =>
+                        settingsBloc.add(
+                          SettingsEvent.setThemeAccent(i),
+                        ),
                   ),
                   const SizedBox(height: 64),
                   SizedBox(

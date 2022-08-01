@@ -1,3 +1,5 @@
+import 'package:domain/model/message_attachment/message_attachment.dart';
+
 class Message {
   final int id;
   final String globalId;
@@ -5,7 +7,8 @@ class Message {
   final int peerId;
   final int fromId;
   final int sendState;
-  final String text;
+  final String? text;
+  final List<MessageAttachment>? attachments;
   final Message? replyMessage;
 
   Message({
@@ -15,7 +18,8 @@ class Message {
     required this.peerId,
     required this.fromId,
     required this.sendState,
-    required this.text,
+    this.text,
+    this.attachments,
     this.replyMessage,
   });
 
@@ -27,6 +31,7 @@ class Message {
     int? fromId,
     int? sendState,
     String? text,
+    List<MessageAttachment>? attachments,
     Message? replyMessage,
   }) {
     return Message(
@@ -37,6 +42,7 @@ class Message {
       fromId: fromId ?? this.fromId,
       sendState: sendState ?? this.sendState,
       text: text ?? this.text,
+      attachments: attachments ?? this.attachments,
       replyMessage: replyMessage ?? this.replyMessage,
     );
   }

@@ -6,9 +6,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../router/router.dart';
 import '../../widgets/adaptive_sliver_app_bar.dart';
-import '../../widgets/avatar.dart';
-import '../../widgets/cell.dart';
 import '../../widgets/page_link.dart';
+import 'contacts_list.dart';
 
 class ContactsPage extends StatelessWidget {
   const ContactsPage({Key? key}) : super(key: key);
@@ -64,6 +63,7 @@ class ContactsPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
                               SizedBox(
+                                width: 150,
                                 child: AdaptiveButton.filled(
                                   title: context.loc.scanQrCode,
                                   onPressed: () {},
@@ -85,29 +85,7 @@ class ContactsPage extends StatelessWidget {
               ),
             ),
           ),
-          SliverPadding(
-            padding: bodyPadding,
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int index) {
-                  return Cell(
-                    avatar: const Avatar(
-                      height: 50,
-                      width: 50,
-                      url: "emoji://👂/teal",
-                    ),
-                    title: "Сухожилие блять)",
-                    caption: "Ебет собак",
-                    before: Icon(
-                      IconlyLight.chat,
-                      color: context.theme.colorScheme.primary,
-                    ),
-                  );
-                },
-                childCount: 3,
-              ),
-            ),
-          ),
+          const ContactsList(),
         ],
       ),
     );

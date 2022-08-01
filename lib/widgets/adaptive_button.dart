@@ -19,8 +19,7 @@ class AdaptiveButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.padding = const EdgeInsets.symmetric(horizontal: 16),
-  })
-      : _filled = false,
+  })  : _filled = false,
         super(key: key);
 
   const AdaptiveButton.filled({
@@ -30,8 +29,7 @@ class AdaptiveButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.padding = const EdgeInsets.symmetric(horizontal: 16),
-  })
-      : _filled = true,
+  })  : _filled = true,
         super(key: key);
 
   @override
@@ -44,12 +42,12 @@ class AdaptiveButton extends StatelessWidget {
             onPressed: onPressed,
             child: loading
                 ? const SizedBox(
-              height: 18,
-              width: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            )
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
                 : Text(title),
           );
         } else {
@@ -62,22 +60,30 @@ class AdaptiveButton extends StatelessWidget {
       case TargetPlatform.android:
       default:
         if (_filled) {
-          if (icon != null) {
+          if (icon != null && loading == false) {
             return ElevatedButton.icon(
               onPressed: onPressed,
               style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               label: Text(title),
               icon: Icon(icon),
             );
           }
           return ElevatedButton(
-            onPressed: onPressed,
+            onPressed: loading ? null : onPressed,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
             ),
-            child: Text(title),
+            child: loading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(title),
           );
         } else {
           return TextButton(

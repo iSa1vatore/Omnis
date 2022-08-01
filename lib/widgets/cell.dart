@@ -8,6 +8,7 @@ import 'divider.dart';
 class Cell extends StatelessWidget {
   final String title;
   final String? caption;
+  final Widget? captionWidget;
   final Avatar avatar;
   final Widget? before;
   final GestureTapCallback? onTap;
@@ -16,6 +17,7 @@ class Cell extends StatelessWidget {
     Key? key,
     required this.title,
     this.caption,
+    this.captionWidget,
     required this.avatar,
     this.before,
     this.onTap,
@@ -52,20 +54,21 @@ class Cell extends StatelessWidget {
                             maxLines: 1,
                           ),
                           const SizedBox(height: 2),
-                          if (caption != null)
+                          if (caption != null || captionWidget != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                caption!,
-                                style:
-                                context.theme.textTheme.caption!.copyWith(
-                                  fontSize: 15,
-                                ),
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            )
+                              child: captionWidget ??
+                                  Text(
+                                    caption!,
+                                    style: context.theme.textTheme.caption!
+                                        .copyWith(
+                                      fontSize: 15,
+                                    ),
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                            ),
                         ],
                       ),
                     ),

@@ -4,11 +4,13 @@ class VoiceWaveForm extends CustomPainter {
   final Color color;
   final double height;
   List<double> waveform;
+  final int progress;
 
   VoiceWaveForm({
     required this.color,
     required this.height,
     required this.waveform,
+    required this.progress,
   });
 
   @override
@@ -32,19 +34,21 @@ class VoiceWaveForm extends CustomPainter {
 
       double waveformYOffset = height - waveformValue;
 
-      paint.color = color;
+      if (waveNum > progress) {
+        paint.color = color.withOpacity(0.5);
+      }
 
       canvas.drawLine(
-        Offset(waveNum, waveformYOffset),
-        Offset(waveNum, waveformValue),
+        Offset(waveNum * 3.5, waveformYOffset),
+        Offset(waveNum * 3.5, waveformValue),
         paint,
       );
 
-      waveNum += 3.5;
+      waveNum += 1;
     }
   }
 
   @override
   bool shouldRepaint(covariant VoiceWaveForm oldDelegate) =>
-      oldDelegate.waveform != waveform;
+      oldDelegate.waveform != waveform || oldDelegate.progress != progress;
 }

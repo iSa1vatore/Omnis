@@ -1,7 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:omnis/extensions/build_context.dart';
+import 'package:omnis/widgets/blur_effect.dart';
 
 class ThemePreview extends StatelessWidget {
   final bool selected;
@@ -64,16 +63,11 @@ class ThemePreview extends StatelessWidget {
         bottomLeft: Radius.circular(isAppBar ? 0 : 12),
         bottomRight: Radius.circular(isAppBar ? 0 : 12),
       ),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-          child: Container(
-            height: 15,
-            decoration: BoxDecoration(
-              color: context.theme.appBarTheme.backgroundColor,
-            ),
-          ),
-        ),
+      child: BlurEffect(
+        sigma: 3,
+        backgroundColor: context.theme.appBarTheme.backgroundColor,
+        backgroundColorOpacity: .65,
+        child: Container(height: 15),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:data/di/di.dart';
+import 'package:domain/di/di.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:server/di/di.dart';
@@ -18,8 +19,9 @@ class DI {
     $initGetIt(_getIt);
 
     await configureDataDependencies(_getIt);
-    configureServerDependencies(_getIt);
     configureServicesDependencies(_getIt);
+    configureDomainDependencies(_getIt);
+    configureServerDependencies(_getIt);
   }
 
   static T resolve<T extends Object>() => instance._getIt.get();

@@ -16,8 +16,15 @@ class AudioWaveFormUtils {
     return newDb;
   }
 
-  static List<double> resizeBy(
-    double maxHeight, {
+  static List<double> shrink({
+    required List<double> waveForm,
+    required int length,
+  }) =>
+      waveForm.take(length).toList();
+
+  static List<double> resize({
+    required double maxHeight,
+    required int maxLength,
     required List<double> waveList,
   }) {
     var percents = _maxDbValue / maxHeight;
@@ -25,6 +32,10 @@ class AudioWaveFormUtils {
     List<double> newList = [];
     for (var waveItemValue in waveList) {
       newList.add(waveItemValue / percents);
+    }
+
+    while (newList.length > maxLength) {
+      return shrink(waveForm: newList, length: maxLength);
     }
 
     return newList;

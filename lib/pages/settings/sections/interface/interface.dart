@@ -7,10 +7,10 @@ import 'package:omnis/theme/base_theme.dart';
 import 'package:omnis/widgets/adaptive_slider.dart';
 import 'package:omnis/widgets/divider.dart';
 
+import '../../../../bloc/settings_bloc.dart';
 import '../../../../widgets/adaptive_app_bar.dart';
 import '../../../../widgets/adaptive_switch.dart';
 import '../../../../widgets/simple_color_selector.dart';
-import '../../settings_bloc.dart';
 import '../../widgets/chat_preview.dart';
 import '../../widgets/settings_params_container.dart';
 import '../../widgets/theme_preview.dart';
@@ -33,12 +33,12 @@ class SettingsInterfaceView extends StatelessWidget {
 
     var bodyPadding = context
         .safePadding(
-          left: context.platform.isIos ? 16 : 0,
-          right: context.platform.isIos ? 16 : 0,
-        )
+      left: context.platform.isIos ? 16 : 0,
+      right: context.platform.isIos ? 16 : 0,
+    )
         .copyWith(
-          top: context.appBarHeight,
-        );
+      top: context.appBarHeight,
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -83,9 +83,10 @@ class SettingsInterfaceView extends StatelessWidget {
                 child: SimpleColorSelector(
                   colors: BaseTheme.accents,
                   selectedColor: settingsBloc.state.interfaceColorAccent,
-                  onChange: (i) => settingsBloc.add(
-                    SettingsEvent.setThemeAccent(i),
-                  ),
+                  onChange: (i) =>
+                      settingsBloc.add(
+                        SettingsEvent.setThemeAccent(i),
+                      ),
                 ),
               ),
             ],

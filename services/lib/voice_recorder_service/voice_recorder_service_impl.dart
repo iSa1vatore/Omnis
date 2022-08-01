@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:common/utils/random_utils.dart';
 import 'package:injectable/injectable.dart';
+import 'package:path/path.dart' as path;
 import 'package:record/record.dart';
 import 'package:services/files_cache_service/files_cache_service.dart';
 import 'package:services/voice_recorder_service/voice_recorder_service.dart';
@@ -16,19 +19,29 @@ class VoiceRecorderServiceImpl extends VoiceRecorderService {
     var voiceMessagesDir = await filesCacheService.voiceMessagesDir;
 
     final voiceMessageFilePath =
-        "$voiceMessagesDir/${RandomUtils.generateString(16)}.aac";
+        "$voiceMessagesDir/${RandomUtils.generateString(16)}.m4a";
 
     await audioRecorder.start(
       path: voiceMessageFilePath,
       encoder: AudioEncoder.aacLc,
-      numChannels: 1,
-      bitRate: 32000,
     );
   }
 
   @override
   Future<String?> stop() async {
     String? voiceMessagePath = await audioRecorder.stop();
+
+    if (voiceMessagePath != null) {
+      var fileId = path.basenameWithoutExtension(voiceMessagePath);
+      var fileName = "voice-message.m4a";
+
+      await filesCacheService.saveVoiceMessage(
+        file: File(voiceMessagePath),
+        fileId: fileId,
+        fileName: fileName,
+        copyInStorage: false,
+      );
+    }
 
     return voiceMessagePath;
   }

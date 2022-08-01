@@ -23,8 +23,9 @@ dependencies:
   # Utils
   freezed_annotation: ^2.0.3
   worker_manager: ^4.3.5
+  dartz: ^0.10.1
 
-  # Json Serialization
+  # Serialization
   json_annotation: ^4.5.0
 
   # DI
@@ -38,9 +39,6 @@ dependencies:
 
   # RX
   rxdart: ^0.27.4
-
-dependency_overrides:
-  analyzer: ^4.0.0
 
 dev_dependencies:
   flutter_test:

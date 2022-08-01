@@ -1,17 +1,21 @@
+import 'package:dartz/dartz.dart';
 import 'package:domain/model/conversation.dart';
-import 'package:domain/util/resource.dart';
+
+import '../exceptions/conversations_failure.dart';
 
 abstract class ConversationsRepository {
-  Future<Resource<Conversation>> findOrCreateById(int id);
+  Future<Either<ConversationsFailure, Conversation>> findById(int id);
 
-  Future<Resource<bool>> update({
+  Future<Either<ConversationsFailure, Unit>> update({
     required int id,
     int? inRead,
     int? outRead,
     int? lastMessageId,
   });
 
-  Future<Resource<Conversation>> create(Conversation conversation);
+  Future<Either<ConversationsFailure, Conversation>> create(
+    Conversation conversation,
+  );
 
-  Future<Resource<List<Conversation>>> fetchAll();
+  Future<Either<ConversationsFailure, List<Conversation>>> findAll();
 }

@@ -5,7 +5,6 @@ import 'package:domain/model/network_address.dart';
 extension ConnectionEntityToConnection on ConnectionEntity {
   Connection toConnection() {
     return Connection(
-      id: id!,
       userId: userId,
       token: token,
       address: NetworkAddress(address, port),

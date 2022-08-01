@@ -1,17 +1,23 @@
+import 'package:dartz/dartz.dart';
+import 'package:domain/exceptions/users_failure.dart';
+
+import '../model/connection.dart';
 import '../model/user.dart';
-import '../model/user_nearby.dart';
-import '../util/resource.dart';
 
 abstract class UsersRepository {
-  Future<Resource<User>> me();
+  Future<Either<UsersFailure, User>> me();
 
-  Future<Resource<User>> create(User user);
+  Future<Either<UsersFailure, User>> create(User user);
 
-  Future<Resource<User>> findByID(int id);
+  Future<User?> findByID(int id);
 
-  Future<Resource<List<User>>> findAll();
+  Future<Either<UsersFailure, User>> findByGlobalId(String globalId);
 
-  Stream<List<UserNearby>> observeUsersNearby();
+  Future<List<User>> findAll();
+
+  Future<Either<UsersFailure, User>> fetchFromRemote(Connection connection);
+
+  Stream<List<User>> observeUsersNearby();
 
   void discoverUsersNearby();
 }

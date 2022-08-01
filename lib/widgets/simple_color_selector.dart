@@ -22,6 +22,7 @@ class SimpleColorSelector extends HookWidget {
     );
 
     final leftOffset = useState(0.0);
+    final showAnimation = useState(false);
 
     void calcSelectedItemPosition() {
       if (containerKeys[selectedColor].currentContext == null) {
@@ -52,7 +53,7 @@ class SimpleColorSelector extends HookWidget {
     return Stack(
       children: [
         AnimatedPositioned(
-          duration: const Duration(milliseconds: 250),
+          duration: Duration(milliseconds: showAnimation.value ? 150 : 0),
           left: leftOffset.value,
           curve: Curves.fastOutSlowIn,
           child: Container(
@@ -69,7 +70,10 @@ class SimpleColorSelector extends HookWidget {
           children: [
             for (var i = 0; i < colors.length; i++)
               GestureDetector(
-                onTap: () => onChange(i),
+                onTap: () {
+                  onChange(i);
+                  showAnimation.value = true;
+                },
                 child: Container(
                   key: containerKeys[i],
                   decoration: BoxDecoration(

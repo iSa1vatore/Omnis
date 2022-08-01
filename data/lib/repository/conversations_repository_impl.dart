@@ -1,9 +1,10 @@
+import 'package:dartz/dartz.dart';
 import 'package:data/mapper/conversation_mapper.dart';
 import 'package:data/sources/local/db/dao/conversation_dao.dart';
 import 'package:data/sources/local/db/entity/conversation_entity.dart';
+import 'package:domain/exceptions/conversations_failure.dart';
 import 'package:domain/model/conversation.dart';
 import 'package:domain/repository/conversations_repository.dart';
-import 'package:domain/util/resource.dart';
 import 'package:injectable/injectable.dart';
 
 import '../sources/local/db/app_database.dart';
@@ -19,74 +20,90 @@ class ConversationsRepositoryImpl extends ConversationsRepository {
   }
 
   @override
-  Future<Resource<Conversation>> findOrCreateById(int id) async {
-    var conversation = await _dao.findConversationById(id);
+  Future<Either<ConversationsFailure, Conversation>> findById(
+    int id,
+  ) async {
+    try {
+      var conversation = await _dao.findConversationById(id);
 
-    if (conversation != null) {
-      return Resource.success(conversation.toConversation());
+      if (conversation != null) {
+        return Right(conversation.toConversation());
+      }
+
+      return const Left(ConversationsFailure.doesNotExist());
+    } catch (_) {
+      return const Left(ConversationsFailure.dbError());
     }
-
-    return create(Conversation(
-      id: id,
-      inRead: 0,
-      outRead: 0,
-      lastMessageId: 0,
-    ));
   }
 
   @override
-  Future<Resource<Conversation>> create(Conversation conversation) async {
-    var newConversationId = await _dao.insertConversation(
-      conversation.toConversationEntity(),
-    );
+  Future<Either<ConversationsFailure, Conversation>> create(
+    Conversation conversation,
+  ) async {
+    try {
+      var newConversationId = await _dao.insertConversation(
+        conversation.toConversationEntity(),
+      );
 
-    var newConversation = await _dao.findConversationById(newConversationId);
+      var newConversation = await _dao.findConversationById(newConversationId);
 
-    if (newConversation != null) {
-      return Resource.success(newConversation.toConversation());
+      if (newConversation != null) {
+        return Right(newConversation.toConversation());
+      }
+
+      return const Left(ConversationsFailure.createError());
+    } catch (_) {
+      return const Left(ConversationsFailure.dbError());
     }
-
-    return Resource.error("conversation create error");
   }
 
   @override
-  Future<Resource<bool>> update({
+  Future<Either<ConversationsFailure, Unit>> update({
     required int id,
     int? inRead,
     int? outRead,
     int? lastMessageId,
   }) async {
-    var conversation = await _dao.findConversationById(id);
+    try {
+      var conversation = await _dao.findConversationById(id);
 
-    if (conversation != null) {
-      var update = await _dao.updateConversation(ConversationEntity(
-        id: id,
-        inRead: inRead ?? conversation.inRead,
-        outRead: outRead ?? conversation.outRead,
-        lastMessageId: lastMessageId ?? conversation.lastMessageId,
-      ));
+      if (conversation != null) {
+        var update = await _dao.updateConversation(ConversationEntity(
+          id: id,
+          inRead: inRead ?? conversation.inRead,
+          outRead: outRead ?? conversation.outRead,
+          lastMessageId: lastMessageId ?? conversation.lastMessageId,
+        ));
 
-      if (update == 1) return Resource.success(true);
-    } else {
-      var newConversation = await create(Conversation(
-        id: id,
-        inRead: inRead ?? 0,
-        outRead: outRead ?? 0,
-        lastMessageId: lastMessageId ?? 0,
-      ));
+        if (update != 0) return const Right(unit);
 
-      if (newConversation.error == null) return Resource.success(true);
+        return const Left(ConversationsFailure.updateError());
+      } else {
+        var createConversation = await create(Conversation(
+          id: id,
+          inRead: inRead ?? 0,
+          outRead: outRead ?? 0,
+          lastMessageId: lastMessageId ?? 0,
+        ));
+
+        return createConversation.fold(
+          (error) => const Left(ConversationsFailure.updateError()),
+          (_) => const Right(unit),
+        );
+      }
+    } catch (_) {
+      return const Left(ConversationsFailure.dbError());
     }
-
-    return Resource.error("update error");
   }
 
   @override
-  Future<Resource<List<Conversation>>> fetchAll() async {
-    var conversations = await _dao.findAll();
+  Future<Either<ConversationsFailure, List<Conversation>>> findAll() async {
+    try {
+      var conversations = await _dao.findAll();
 
-    return Resource.success(
-      conversations.map((e) => e.toConversation()).toList(),
-    );
+      return Right(conversations.map((e) => e.toConversation()).toList());
+    } catch (_) {
+      return const Left(ConversationsFailure.dbError());
+    }
   }
 }
