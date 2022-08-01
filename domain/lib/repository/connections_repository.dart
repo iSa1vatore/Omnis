@@ -5,7 +5,8 @@ import '../exceptions/connection_failure.dart';
 
 abstract class ConnectionsRepository {
   Future<Either<UserConnectionFailure, Unit>> connectToUser(
-      Connection connection);
+    Connection connection,
+  );
 
   Future<Either<UserConnectionFailure, Unit>> create(Connection connection);
 

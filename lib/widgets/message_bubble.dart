@@ -57,7 +57,6 @@ class MessagesBubble extends StatelessWidget {
         text,
         style: const TextStyle(
           fontSize: 38,
-          height: .6,
         ),
       );
 

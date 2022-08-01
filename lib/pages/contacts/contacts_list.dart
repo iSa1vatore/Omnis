@@ -16,22 +16,22 @@ class ContactsList extends StatelessWidget {
       padding: bodyPadding,
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) {
+          (BuildContext context, int index) {
             return Cell(
               avatar: const Avatar(
                 height: 50,
                 width: 50,
-                source: "emoji://👂/teal",
+                source: "emoji://🥑/green",
               ),
-              title: "Сухожилие блять)",
-              caption: "Ебет собак",
+              title: "Alex Dudka",
+              caption: "Online",
               before: Icon(
                 IconlyLight.chat,
                 color: context.theme.colorScheme.primary,
               ),
             );
           },
-          childCount: 3,
+          childCount: 1,
         ),
       ),
     );

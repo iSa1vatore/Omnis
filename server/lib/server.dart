@@ -286,22 +286,29 @@ class NewServer {
     } else if (req.encryption == 'aes') {
       var bodyParts = body.split("\n");
 
-      var connection = await connectionsRepository.findByAddress(
-        ip: req.sender.address.ip,
-        port: req.sender.address.port,
-      );
+      var user = await usersRepository
+          .findByGlobalId(req.sender.globalUserId)
+          .then((user) => user.fold(
+                (e) => null,
+                (user) => user,
+              ));
 
-      if (connection != null) {
-        encodedBody = jsonDecode(EncryptionUtils.aesDecrypt(
-          key: connection.token,
-          ivKey: bodyParts.first,
-          message: bodyParts.last,
-        ));
+      if (user == null) return {};
 
-        encodedBody["user_id"] = connection.userId;
-      } else {
-        encodedBody = {};
-      }
+      await connectionsRepository
+          .findByUserId(user.id)
+          .then((findConnection) => findConnection.fold(
+                (e) => {encodedBody = {}},
+                (connection) {
+                  encodedBody = jsonDecode(EncryptionUtils.aesDecrypt(
+                    key: connection.token,
+                    ivKey: bodyParts.first,
+                    message: bodyParts.last,
+                  ));
+
+                  encodedBody["user_id"] = connection.userId;
+                },
+              ));
     }
 
     return encodedBody;
